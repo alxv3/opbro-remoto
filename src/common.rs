@@ -2507,6 +2507,9 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
 }
 
 pub fn load_custom_client() {
+    // OPBro: brand the app before any Config access (config/log/IPC paths derive
+    // from APP_NAME on first use). custom.txt may override it afterwards.
+    *config::APP_NAME.write().unwrap() = "OPBro-Remoto".to_owned();
     #[cfg(debug_assertions)]
     if let Ok(data) = std::fs::read_to_string("./custom.txt") {
         read_custom_client(data.trim());
@@ -2609,7 +2612,10 @@ pub fn read_custom_client(config: &str) {
         log::error!("Failed to decode custom client config");
         return;
     };
-    const KEY: &str = "5Qbwsde3unUcJBtrx9ZkvUmwFNoExHzpryHuPUdqlWM=";
+    // OPBro: our own custom.txt verification key (RustDesk's original key was
+    // 5Qbwsde3unUcJBtrx9ZkvUmwFNoExHzpryHuPUdqlWM=). Private key lives outside
+    // the repo; regenerate payloads with opbro/gen_custom.py.
+    const KEY: &str = "/3taYjnzcixtdjdupUlqihw7vBmsvoL0sE9XeC/Rq7g=";
     let Some(pk) = get_rs_pk(KEY) else {
         log::error!("Failed to parse public key of custom client");
         return;
