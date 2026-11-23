@@ -3032,7 +3032,7 @@ jobs:
 
   build-rustdesk-web:
     # OPBro: deshabilitado temporalmente (solo Windows x64 + Mac Intel)
-    if: false && (False)
+    if: false
     needs: [validate-update-metadata-keys]
     name: build-rustdesk-web
     runs-on: ubuntu-22.04
