@@ -31,6 +31,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   if (!hInstance)
   {
     std::cout << "Failed to load librustdesk.dll." << std::endl;
+    MessageBoxA(nullptr,
+               "No se pudo cargar librustdesk.dll.\n\n"
+               "Falta la DLL o una dependencia suya en la carpeta del programa.",
+               "OPBro Remoto", MB_OK | MB_ICONERROR);
     return EXIT_FAILURE;
   }
   FUNC_RUSTDESK_CORE_MAIN rustdesk_core_main =
@@ -38,6 +42,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   if (!rustdesk_core_main)
   {
     std::cout << "Failed to get rustdesk_core_main." << std::endl;
+    MessageBoxA(nullptr,
+               "No se encontro rustdesk_core_main en librustdesk.dll.\n"
+               "La DLL no corresponde a esta version.",
+               "OPBro Remoto", MB_OK | MB_ICONERROR);
     return EXIT_FAILURE;
   }
   FUNC_RUSTDESK_FREE_ARGS free_c_args =
@@ -45,6 +53,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   if (!free_c_args)
   {
     std::cout << "Failed to get free_c_args." << std::endl;
+    MessageBoxA(nullptr,
+               "No se encontro free_c_args en librustdesk.dll.\n"
+               "La DLL no corresponde a esta version.",
+               "OPBro Remoto", MB_OK | MB_ICONERROR);
     return EXIT_FAILURE;
   }
   std::vector<std::string> command_line_arguments =
@@ -63,6 +75,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
       args_str += (argument + " ");
     }
     // std::cout << "RustDesk [" << args_str << "], core returns false, exiting without launching Flutter app." << std::endl;
+    // The runner is a GUI-subsystem binary, so stdout goes nowhere and the
+    // process would just vanish. Surface the reason instead of exiting silently.
+    std::string msg = "OPBro Remoto se cerro antes de iniciar la interfaz.\n\n";
+    msg += "RustDesk core devolvio un error sin detalle.\n";
+    msg += "Argumentos: [" + args_str + "]";
+    MessageBoxA(nullptr, msg.c_str(), "OPBro Remoto", MB_OK | MB_ICONERROR);
     return EXIT_SUCCESS;
   }
   std::vector<std::string> rust_args(c_args, c_args + args_len);

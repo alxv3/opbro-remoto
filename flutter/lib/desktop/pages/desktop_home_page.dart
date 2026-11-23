@@ -698,9 +698,27 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     );
   }
 
+  // OPBro: on macOS the client cannot capture/remote without these, so ask for
+  // them once at startup instead of waiting for the user to find the button.
+  // The system dialog only shows once per app; after that the settings pane
+  // opens, which is what the permission card's "Configure" already does.
+  void _autoRequestMacPermissions() {
+    if (!isMacOS || bind.isOutgoingOnly()) return;
+    if (!bind.mainIsCanScreenRecording(prompt: true)) {
+      watchIsCanScreenRecording = true;
+    }
+    if (!bind.mainIsProcessTrusted(prompt: true)) {
+      watchIsProcessTrust = true;
+    }
+    if (!bind.mainIsCanInputMonitoring(prompt: true)) {
+      watchIsInputMonitoring = true;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _autoRequestMacPermissions();
     _updateTimer = periodic_immediate(const Duration(seconds: 1), () async {
       await gFFI.serverModel.fetchID();
       final error = await bind.mainGetError();

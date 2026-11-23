@@ -256,22 +256,52 @@ fn execute(path: PathBuf, args: Vec<String>, _ui: bool) {
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit());
     }
-    let _child = cmd.spawn();
-
-    #[cfg(windows)]
-    if _ui {
-        match _child {
-            Ok(child) => unsafe {
-                winapi::um::winuser::AllowSetForegroundWindow(child.id() as u32);
-            },
-            Err(e) => {
-                eprintln!("{:?}", e);
+    let spawned = cmd.spawn();
+    match spawned {
+        Ok(child) => {
+            #[cfg(windows)]
+            if _ui {
+                unsafe {
+                    winapi::um::winuser::AllowSetForegroundWindow(child.id() as u32);
+                }
             }
+        }
+        // The packer is a windows-subsystem binary, so a failed spawn used to
+        // vanish with no message at all.
+        Err(e) => {
+            show_fatal(&format!(
+                "No se pudo iniciar la aplicacion: {}\n\n{e}",
+                path.display()
+            ));
         }
     }
 }
 
+fn show_fatal(msg: &str) {
+    #[cfg(windows)]
+    unsafe {
+        use windows::Win32::UI::WindowsAndMessaging::{
+            MessageBoxW, MB_ICONERROR, MB_OK, HWND_MESSAGE,
+        };
+        let wide: Vec<u16> = msg.encode_utf16().chain(std::iter::once(0)).collect();
+        let title: Vec<u16> = "OPBro Remoto".encode_utf16().chain(std::iter::once(0)).collect();
+        MessageBoxW(HWND_MESSAGE, &wide, &title, MB_OK | MB_ICONERROR);
+    }
+    #[cfg(not(windows))]
+    eprintln!("{msg}");
+}
+
 fn main() -> Result<(), String> {
+    if let Err(e) = run() {
+        // subsystem=windows: stderr goes nowhere, so the packer would just
+        // vanish. Show the reason before exiting.
+        show_fatal(&format!("No se pudo preparar la aplicacion.\n\n{e}"));
+        return Err(e);
+    }
+    Ok(())
+}
+
+fn run() -> Result<(), String> {
     let mut args = Vec::new();
     let mut arg_exe = Default::default();
     let mut i = 0;

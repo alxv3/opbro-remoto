@@ -57,6 +57,9 @@ def build_payloads(server: str, relay: str, hbbs_key: str) -> dict:
             "hide-proxy-settings": "Y",
             "hide-websocket-settings": "Y",
             "hide-stop-service": "Y",
+            # Sin API server propio (21114): evita los reintentos con timeout
+            # de 18s a hbbs.opbro.cl:21114 en heartbeat/sysinfo/audit.
+            "register-device": "N",
         },
         "conn-type": "incoming",
         "disable-settings": "Y",
@@ -71,6 +74,9 @@ def build_payloads(server: str, relay: str, hbbs_key: str) -> dict:
         "override-settings": override,
         "default-settings": {
             "hide-server-settings": "Y",
+            # Igual que el cliente: sin API server (21114) no hay a donde
+            # mandar heartbeat/sysinfo/audit, y cada intento cuelga 18s.
+            "register-device": "N",
         },
         "conn-type": "outgoing",
         "disable-ab": "Y",
