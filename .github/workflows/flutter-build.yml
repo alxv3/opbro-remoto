@@ -1152,11 +1152,18 @@ jobs:
           sed -i -e 's/MAXIMUM_UNMOUNTING_ATTEMPTS=3/MAXIMUM_UNMOUNTING_ATTEMPTS=7/' "$CREATE_DMG"
           APP=./flutter/build/macos/Build/Products/Release/OPBro-Remoto.app
           test -d "$APP" || { echo "::error::missing $APP"; exit 1; }
+          # OPBro: adding custom.txt after the build invalidates the app's code
+          # signature, and dyld then refuses to load FlutterMacOS.framework
+          # ("different Team IDs"), crashing at launch. Re-sign the whole bundle
+          # ad-hoc after each copy so seal and Team ID stay consistent.
+          resign() { codesign --force --deep --sign - "$1"; codesign --verify --verbose=2 "$1" || exit 1; }
           # Variante Cliente
           cp ./opbro/custom-client.txt "$APP/Contents/Resources/custom.txt"
+          resign "$APP"
           create-dmg --icon "OPBro-Remoto.app" 200 190 --hide-extension "OPBro-Remoto.app" --window-size 800 400 --app-drop-link 600 185 rustdesk-${{ env.VERSION }}-Cliente-${{ matrix.job.arch }}.dmg "$APP"
           # Variante Administrador
           cp ./opbro/custom-admin.txt "$APP/Contents/Resources/custom.txt"
+          resign "$APP"
           create-dmg --icon "OPBro-Remoto.app" 200 190 --hide-extension "OPBro-Remoto.app" --window-size 800 400 --app-drop-link 600 185 rustdesk-${{ env.VERSION }}-Admin-${{ matrix.job.arch }}.dmg "$APP"
 
       - name: Upload unsigned macOS app
