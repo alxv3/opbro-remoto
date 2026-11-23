@@ -1179,6 +1179,11 @@ jobs:
           cp ./opbro/custom-admin.txt "$APP/Contents/Resources/custom.txt"
           cp ./flutter/macos/Runner/AppIcon-admin.icns "$APP/Contents/Resources/AppIcon.icns"
           /usr/libexec/PlistBuddy -c "Set :CFBundleName OPBro Remoto Admin" "$APP/Contents/Info.plist"
+          # macOS keys TCC permissions off the bundle id, so with a shared
+          # com.opbro.remoto the two variants were the same app to the system:
+          # adding one left the other in the list and permissions could not be
+          # granted separately. Give the Admin its own id.
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.opbro.remoto.admin" "$APP/Contents/Info.plist"
           mv "$APP" "$ADMIN_APP"
           resign "$ADMIN_APP"
           create-dmg --icon "OPBro-Remoto-Admin.app" 200 190 --hide-extension "OPBro-Remoto-Admin.app" --window-size 800 400 --app-drop-link 600 185 rustdesk-${{ env.VERSION }}-Admin-${{ matrix.job.arch }}.dmg "$ADMIN_APP"

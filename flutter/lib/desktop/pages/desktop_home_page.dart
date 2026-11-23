@@ -698,21 +698,44 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     );
   }
 
-  // OPBro: on macOS the client cannot capture/remote without these, so ask for
-  // them once at startup instead of waiting for the user to find the button.
-  // The system dialog only shows once per app; after that the settings pane
-  // opens, which is what the permission card's "Configure" already does.
+  // OPBro: on macOS the client cannot be captured/controlled without these, so
+  // ask for them at startup instead of waiting for the user to find the button.
+  //
+  // One at a time: each request opens its own system prompt/Settings pane, and
+  // firing all three at once makes them overwrite each other (the last pane
+  // wins and the others are never registered). Screen Recording goes first
+  // because without it the remote side never receives any image.
   void _autoRequestMacPermissions() {
-    if (!isMacOS || bind.isOutgoingOnly()) return;
-    if (!bind.mainIsCanScreenRecording(prompt: true)) {
-      watchIsCanScreenRecording = true;
+    if (!isMacOS) return;
+    _requestMacPermission(bind.isOutgoingOnly() ? 1 : 0);
+  }
+
+  void _requestMacPermission(int step) {
+    if (!mounted) return;
+    switch (step) {
+      case 0:
+        // Screen Recording is only needed by the side that gets controlled;
+        // an outgoing-only viewer never captures its own screen.
+        if (!bind.isOutgoingOnly() &&
+            !bind.mainIsCanScreenRecording(prompt: true)) {
+          watchIsCanScreenRecording = true;
+        }
+        break;
+      case 1:
+        if (!bind.mainIsProcessTrusted(prompt: true)) {
+          watchIsProcessTrust = true;
+        }
+        break;
+      case 2:
+        if (!bind.mainIsCanInputMonitoring(prompt: true)) {
+          watchIsInputMonitoring = true;
+        }
+        break;
+      default:
+        return;
     }
-    if (!bind.mainIsProcessTrusted(prompt: true)) {
-      watchIsProcessTrust = true;
-    }
-    if (!bind.mainIsCanInputMonitoring(prompt: true)) {
-      watchIsInputMonitoring = true;
-    }
+    setState(() {});
+    Future.delayed(const Duration(seconds: 5), () => _requestMacPermission(step + 1));
   }
 
   @override
