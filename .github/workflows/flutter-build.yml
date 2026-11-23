@@ -1172,7 +1172,7 @@ jobs:
           # Variante Cliente
           cp ./opbro/custom-client.txt "$APP/Contents/Resources/custom.txt"
           resign "$APP"
-          create-dmg --icon "OPBro-Remoto.app" 200 190 --hide-extension "OPBro-Remoto.app" --window-size 800 400 --app-drop-link 600 185 rustdesk-${{ env.VERSION }}-Cliente-${{ matrix.job.arch }}.dmg "$APP"
+          create-dmg --icon "OPBro-Remoto.app" 200 190 --hide-extension "OPBro-Remoto.app" --window-size 800 400 --app-drop-link 600 185 --volname "OPBro Remoto Cliente" OPBroRemoto-Cliente-${{ matrix.job.arch }}.dmg "$APP"
           # Variante Administrador: badge ADMIN en el icono y bundle con nombre
           # propio, para distinguirla de la Cliente en Finder y Dock.
           ADMIN_APP=./flutter/build/macos/Build/Products/Release/OPBro-Remoto-Admin.app
@@ -1186,7 +1186,7 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.opbro.remoto.admin" "$APP/Contents/Info.plist"
           mv "$APP" "$ADMIN_APP"
           resign "$ADMIN_APP"
-          create-dmg --icon "OPBro-Remoto-Admin.app" 200 190 --hide-extension "OPBro-Remoto-Admin.app" --window-size 800 400 --app-drop-link 600 185 rustdesk-${{ env.VERSION }}-Admin-${{ matrix.job.arch }}.dmg "$ADMIN_APP"
+          create-dmg --icon "OPBro-Remoto-Admin.app" 200 190 --hide-extension "OPBro-Remoto-Admin.app" --window-size 800 400 --app-drop-link 600 185 --volname "OPBro Remoto Admin" OPBroRemoto-Admin-${{ matrix.job.arch }}.dmg "$ADMIN_APP"
 
       - name: Upload unsigned macOS app
         if: env.UPLOAD_ARTIFACT == 'true'
@@ -1194,8 +1194,8 @@ jobs:
         with:
           name: rustdesk-unsigned-macos-${{ matrix.job.arch }}
           path: |
-            rustdesk-${{ env.VERSION }}-Cliente-${{ matrix.job.arch }}.dmg
-            rustdesk-${{ env.VERSION }}-Admin-${{ matrix.job.arch }}.dmg
+            OPBroRemoto-Cliente-${{ matrix.job.arch }}.dmg
+            OPBroRemoto-Admin-${{ matrix.job.arch }}.dmg
 
       - name: Codesign app and create signed dmg
         if: env.MACOS_P12_BASE64 != null && env.UPLOAD_ARTIFACT == 'true'
@@ -1233,8 +1233,8 @@ jobs:
           VERSION: ${{ env.VERSION }}
           ARCH: ${{ matrix.job.arch }}
         run: |
-          test -f "rustdesk-${VERSION}-Cliente-${ARCH}.dmg"
-          test -f "rustdesk-${VERSION}-Admin-${ARCH}.dmg"
+          test -f "OPBroRemoto-Cliente-${ARCH}.dmg"
+          test -f "OPBroRemoto-Admin-${ARCH}.dmg"
 
       - name: Upload signed macOS DMG
         if: env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA == 'true' && env.MACOS_P12_BASE64 != null
@@ -1251,7 +1251,7 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            rustdesk*-${{ matrix.job.arch }}.dmg
+            OPBroRemoto-*-${{ matrix.job.arch }}.dmg
 
   publish-signed-update-metadata:
     needs: [build-for-windows-flutter, build-for-windows-sciter, build-for-macOS]

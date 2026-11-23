@@ -2208,6 +2208,21 @@ pub fn is_win_10_or_greater() -> bool {
     unsafe { is_windows_10_or_greater() > 0 }
 }
 
+/// The runner is a GUI binary, so `eprintln!` output is never seen. Surface
+/// startup failures with a MessageBox instead of exiting silently.
+pub fn show_fatal_error(msg: &str) {
+    unsafe {
+        let wide: Vec<u16> = msg.encode_utf16().chain(std::iter::once(0)).collect();
+        let title: Vec<u16> = "OPBro Remoto".encode_utf16().chain(std::iter::once(0)).collect();
+        winapi::um::winuser::MessageBoxW(
+            std::ptr::null_mut(),
+            wide.as_ptr(),
+            title.as_ptr(),
+            winapi::um::winuser::MB_OK | winapi::um::winuser::MB_ICONERROR,
+        );
+    }
+}
+
 pub fn bootstrap() -> bool {
     if let Ok(lic) = get_license_from_exe_name() {
         *config::EXE_RENDEZVOUS_SERVER.write().unwrap() = lic.host.clone();
@@ -2238,7 +2253,10 @@ fn set_safe_load_dll() -> bool {
     // `SetDllDirectoryW` should never fail.
     // https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setdlldirectoryw
     if unsafe { SetDllDirectoryW(wide_string("").as_ptr()) == FALSE } {
-        eprintln!("SetDllDirectoryW failed: {}", io::Error::last_os_error());
+        show_fatal_error(&format!(
+            "SetDllDirectoryW fallo: {}",
+            io::Error::last_os_error()
+        ));
         return false;
     }
 
@@ -2254,27 +2272,31 @@ unsafe fn set_default_dll_directories() -> bool {
         LOAD_LIBRARY_SEARCH_SYSTEM32,
     );
     if module.is_null() {
+        show_fatal_error("No se pudo cargar Kernel32.dll (LoadLibraryExW fallo).");
         return false;
     }
 
     match CString::new("SetDefaultDllDirectories") {
         Err(e) => {
-            eprintln!("CString::new failed: {}", e);
+            show_fatal_error(&format!("CString::new failed: {e}"));
             return false;
         }
         Ok(func_name) => {
             let func = GetProcAddress(module, func_name.as_ptr());
             if func.is_null() {
-                eprintln!("GetProcAddress failed: {}", io::Error::last_os_error());
+                show_fatal_error(&format!(
+                    "No se encontro SetDefaultDllDirectories: {}",
+                    io::Error::last_os_error()
+                ));
                 return false;
             }
             type SetDefaultDllDirectories = unsafe extern "system" fn(DWORD) -> BOOL;
             let func: SetDefaultDllDirectories = std::mem::transmute(func);
             if func(LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS) == FALSE {
-                eprintln!(
-                    "SetDefaultDllDirectories failed: {}",
+                show_fatal_error(&format!(
+                    "SetDefaultDllDirectories fallo: {}",
                     io::Error::last_os_error()
-                );
+                ));
                 return false;
             }
         }
