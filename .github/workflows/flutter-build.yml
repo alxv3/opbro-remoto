@@ -1398,12 +1398,16 @@ jobs:
           path: ./windows-x86/
 
       - name: Download Artifacts
+        # OPBro: msi template upload is disabled, skip download
+        if: false
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: rustdesk-unsigned-msi-template-x86_64
           path: ./msi-template/
 
       - name: Download Artifacts
+        # OPBro: msi template upload is disabled, skip download
+        if: false
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: rustdesk-unsigned-msi-template-aarch64
@@ -1436,7 +1440,7 @@ jobs:
           if [[ "$SIGN_BASE_URL" != '-2' ]]; then
             packer_template=(packer-template)
           fi
-          tar czf rustdesk-${{ env.VERSION }}-unsigned.tar.gz *.dmg windows-x86_64 windows-aarch64 windows-x86 msi-template "${packer_template[@]}"
+          tar czf rustdesk-${{ env.VERSION }}-unsigned.tar.gz *.dmg windows-x86_64 windows-aarch64 windows-x86 "${packer_template[@]}"
 
       - name: Publish unsigned app
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
