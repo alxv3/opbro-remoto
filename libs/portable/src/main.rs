@@ -235,7 +235,8 @@ fn execute(path: PathBuf, args: Vec<String>, _ui: bool) {
     let exe = std::env::current_exe().unwrap_or_default();
     let exe_name = exe.file_name().unwrap_or_default();
     // run executable
-    let mut cmd = Command::new(path);
+    // Borrow: `path` is still needed for the error message below.
+    let mut cmd = Command::new(&path);
     cmd.args(args);
     #[cfg(windows)]
     {
@@ -258,11 +259,11 @@ fn execute(path: PathBuf, args: Vec<String>, _ui: bool) {
     }
     let spawned = cmd.spawn();
     match spawned {
-        Ok(child) => {
+        Ok(_child) => {
             #[cfg(windows)]
             if _ui {
                 unsafe {
-                    winapi::um::winuser::AllowSetForegroundWindow(child.id() as u32);
+                    winapi::um::winuser::AllowSetForegroundWindow(_child.id() as u32);
                 }
             }
         }
@@ -280,12 +281,18 @@ fn execute(path: PathBuf, args: Vec<String>, _ui: bool) {
 fn show_fatal(msg: &str) {
     #[cfg(windows)]
     unsafe {
-        use windows::Win32::UI::WindowsAndMessaging::{
-            MessageBoxW, MB_ICONERROR, MB_OK, HWND_MESSAGE,
-        };
+        // Use winapi::um::winuser: this file already calls it
+        // (AllowSetForegroundWindow), so the module is known to be enabled here,
+        // whereas MessageBoxW in the `windows` crate sits behind a feature this
+        // package does not request.
         let wide: Vec<u16> = msg.encode_utf16().chain(std::iter::once(0)).collect();
         let title: Vec<u16> = "OPBro Remoto".encode_utf16().chain(std::iter::once(0)).collect();
-        MessageBoxW(HWND_MESSAGE, &wide, &title, MB_OK | MB_ICONERROR);
+        winapi::um::winuser::MessageBoxW(
+            std::ptr::null_mut(),
+            wide.as_ptr(),
+            title.as_ptr(),
+            winapi::um::winuser::MB_OK | winapi::um::winuser::MB_ICONERROR,
+        );
     }
     #[cfg(not(windows))]
     eprintln!("{msg}");
