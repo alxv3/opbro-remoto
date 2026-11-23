@@ -1,0 +1,6 @@
+name: ZZ Caller
+on:
+  workflow_dispatch:
+jobs:
+  call:
+    uses: ./.github/workflows/zz-called.yml

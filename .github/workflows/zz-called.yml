@@ -1,0 +1,8 @@
+name: ZZ Called
+on:
+  workflow_call:
+jobs:
+  hello:
+    runs-on: ubuntu-22.04
+    steps:
+      - run: echo hola
