@@ -482,8 +482,15 @@ jobs:
           cp -r ./rustdesk ./rustdesk-admin
           mv ./rustdesk-admin/OPBro-Remoto.exe ./rustdesk-admin/OPBro-RemotoAdmin.exe
           cp ./opbro/custom-admin.txt ./rustdesk-admin/custom.txt
+          # Icono de ventana/barra de tareas: el runner lo carga en runtime desde
+          # data\flutter_assets\assets\icon.ico, basta con reemplazarlo en el
+          # payload (ver LoadCustomIcon en win32_window.cpp).
+          cp ./res/icon-admin.ico ./rustdesk-admin/data/flutter_assets/assets/icon.ico
           pushd ./libs/portable
-          python3 ./generate.py -f ../../rustdesk-admin/ -o . -e ../../rustdesk-admin/OPBro-RemotoAdmin.exe
+          # OPBRO_ICON cambia el icono del exe empaquetado; se limpia el paquete
+          # para que cargo re-ejecute build.rs con la nueva variable.
+          cargo clean -p rustdesk-portable-packer
+          OPBRO_ICON=../../res/icon-admin.ico python3 ./generate.py -f ../../rustdesk-admin/ -o . -e ../../rustdesk-admin/OPBro-RemotoAdmin.exe
           popd
           mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/OPBroRemoto-Admin-${{ matrix.job.arch }}.exe
 
@@ -1161,10 +1168,15 @@ jobs:
           cp ./opbro/custom-client.txt "$APP/Contents/Resources/custom.txt"
           resign "$APP"
           create-dmg --icon "OPBro-Remoto.app" 200 190 --hide-extension "OPBro-Remoto.app" --window-size 800 400 --app-drop-link 600 185 rustdesk-${{ env.VERSION }}-Cliente-${{ matrix.job.arch }}.dmg "$APP"
-          # Variante Administrador
+          # Variante Administrador: badge ADMIN en el icono y bundle con nombre
+          # propio, para distinguirla de la Cliente en Finder y Dock.
+          ADMIN_APP=./flutter/build/macos/Build/Products/Release/OPBro-Remoto-Admin.app
           cp ./opbro/custom-admin.txt "$APP/Contents/Resources/custom.txt"
-          resign "$APP"
-          create-dmg --icon "OPBro-Remoto.app" 200 190 --hide-extension "OPBro-Remoto.app" --window-size 800 400 --app-drop-link 600 185 rustdesk-${{ env.VERSION }}-Admin-${{ matrix.job.arch }}.dmg "$APP"
+          cp ./flutter/macos/Runner/AppIcon-admin.icns "$APP/Contents/Resources/AppIcon.icns"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleName OPBro Remoto Admin" "$APP/Contents/Info.plist"
+          mv "$APP" "$ADMIN_APP"
+          resign "$ADMIN_APP"
+          create-dmg --icon "OPBro-Remoto-Admin.app" 200 190 --hide-extension "OPBro-Remoto-Admin.app" --window-size 800 400 --app-drop-link 600 185 rustdesk-${{ env.VERSION }}-Admin-${{ matrix.job.arch }}.dmg "$ADMIN_APP"
 
       - name: Upload unsigned macOS app
         if: env.UPLOAD_ARTIFACT == 'true'

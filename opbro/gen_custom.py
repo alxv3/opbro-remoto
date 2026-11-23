@@ -64,6 +64,8 @@ def build_payloads(server: str, relay: str, hbbs_key: str) -> dict:
         "disable-account": "Y",
     }
     # Administrador: solo saliente (visor), sin paneles de servicio/entrante.
+    # Sin cuenta de RustDesk (api.rs): no aporta con servidor propio y dejaba
+    # el boton "Iniciar sesion" visible en Ajustes.
     admin = {
         "app-name": "OPBro-Remoto-Admin",
         "override-settings": override,
@@ -71,6 +73,8 @@ def build_payloads(server: str, relay: str, hbbs_key: str) -> dict:
             "hide-server-settings": "Y",
         },
         "conn-type": "outgoing",
+        "disable-ab": "Y",
+        "disable-account": "Y",
     }
     return {"client": cliente, "admin": admin}
 
