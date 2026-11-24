@@ -26,7 +26,10 @@ impl Capturer {
                 }
             },
         )
-        .map_err(|_| io::Error::from(io::ErrorKind::Other))?;
+        // Keep the CGError code: dropping it made every capture failure look
+        // the same ("Failed to create capturer") with no way to tell a missing
+        // Screen Recording grant from a bad display argument.
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("CGDisplayStream: {e:?}")))?;
 
         Ok(Capturer {
             inner,

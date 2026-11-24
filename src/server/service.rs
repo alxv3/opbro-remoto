@@ -305,7 +305,9 @@ impl<T: Subscriber + From<ConnInner>> ServiceTmpl<T> {
                     log::debug!("Enter {} service inner loop", sp.name());
                     let tm = time::Instant::now();
                     if let Err(err) = callback(sp.clone()) {
-                        log::error!("Error of {} service: {}", sp.name(), err);
+                        // {:#} prints the whole anyhow chain; {} hides the
+                        // cause behind the context added by the caller.
+                        log::error!("Error of {} service: {:#}", sp.name(), err);
                         if tm.elapsed() > time::Duration::from_millis(MAX_ERROR_TIMEOUT) {
                             error_timeout = HIBERNATE_TIMEOUT;
                         } else {

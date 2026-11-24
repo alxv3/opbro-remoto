@@ -728,7 +728,18 @@ pub fn start_check_process() {
         if let Ok(exe) = std::env::current_exe() {
             if let Some(_) = exe.file_name().to_owned() {
                 let arg = "--check-hwcodec-config";
-                if let Ok(mut child) = std::process::Command::new(exe).arg(arg).spawn() {
+                let mut check_cmd = std::process::Command::new(exe);
+                check_cmd.arg(arg);
+                #[cfg(windows)]
+                {
+                    // The parent is a GUI binary, so without this flag Windows
+                    // flashes a console window for the --check-hwcodec-config
+                    // child on every start.
+                    use std::os::windows::process::CommandExt;
+                    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+                    check_cmd.creation_flags(CREATE_NO_WINDOW);
+                }
+                if let Ok(mut child) = check_cmd.spawn() {
                     #[cfg(windows)]
                     hwcodec::common::child_exit_when_parent_exit(child.id());
                     // wait up to 30 seconds, it maybe slow on windows startup for poorly performing machines
