@@ -70,17 +70,28 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   char** c_args = rustdesk_core_main(&args_len);
   if (!c_args)
   {
-    std::string args_str = "";
+    // Returning null is the designed outcome for the elevation/service helper
+    // processes: they hand over to another process and must not show a UI.
+    // Only complain when an ordinary launch failed.
+    bool expects_no_ui = false;
     for (const auto& argument : command_line_arguments) {
-      args_str += (argument + " ");
+      if (argument.rfind("--run-as-system", 0) == 0 ||
+          argument.rfind("--elevate", 0) == 0 ||
+          argument.rfind("--portable-service", 0) == 0) {
+        expects_no_ui = true;
+        break;
+      }
     }
-    // std::cout << "RustDesk [" << args_str << "], core returns false, exiting without launching Flutter app." << std::endl;
-    // The runner is a GUI-subsystem binary, so stdout goes nowhere and the
-    // process would just vanish. Surface the reason instead of exiting silently.
-    std::string msg = "OPBro Remoto se cerro antes de iniciar la interfaz.\n\n";
-    msg += "RustDesk core devolvio un error sin detalle.\n";
-    msg += "Argumentos: [" + args_str + "]";
-    MessageBoxA(nullptr, msg.c_str(), "OPBro Remoto", MB_OK | MB_ICONERROR);
+    if (!expects_no_ui) {
+      std::string args_str = "";
+      for (const auto& argument : command_line_arguments) {
+        args_str += (argument + " ");
+      }
+      std::string msg = "OPBro Remoto se cerro antes de iniciar la interfaz.\n\n";
+      msg += "El core devolvio un error sin detalle.\n";
+      msg += "Argumentos: [" + args_str + "]";
+      MessageBoxA(nullptr, msg.c_str(), "OPBro Remoto", MB_OK | MB_ICONERROR);
+    }
     return EXIT_SUCCESS;
   }
   std::vector<std::string> rust_args(c_args, c_args + args_len);
